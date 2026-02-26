@@ -1,0 +1,45 @@
+name: Sound-Keep CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script: |
+          # Navigate to project directory
+          cd ~/sound-keep || git clone https://github.com/${{ github.repository }}.git ~/sound-keep
+          cd ~/sound-keep
+          
+          # Pull latest changes
+          git pull origin main
+
+          # Install system-level audio dependencies on EC2
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1 portaudio19-dev
+
+          # Update Python environment
+          if [ ! -d ".venv" ]; then python3 -m venv .venv; fi
+          source .venv/bin/activate
+          pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+          # Clean up any potential Windows line ending issues
+          sed -i 's/\r$//' run.sh
+          chmod +x run.sh
+          
+          # Run the application (Consider using 'nohup' or a process manager like PM2/systemd)
+          ./run.sh
