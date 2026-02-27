@@ -24,7 +24,7 @@ def song_list_page():
 def welcome():
     return "<html><body><h1><em>Welcome to SoundKeep! Keep track of your favorite songs! </em></h1></body></html>"
 
-#return a list of the songs 
+#return a list of songs 
 @app.route("/songs",methods=["GET"]) 
 def get_songs():
     songs = list(collection.find().sort("order", 1))
